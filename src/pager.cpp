@@ -18,6 +18,7 @@ bool Pager::write(std::span<const uint8_t> data) {
     file_.seekp(0, std::ios::end);
     file_.write(reinterpret_cast<const char*>(data.data()),
                 static_cast<std::streamsize>(data.size()));
+    file_.flush();
     return file_.good();
 }
 
@@ -36,8 +37,10 @@ std::vector<uint8_t> Pager::read_all() const {
     return buffer;
 }
 
-std::size_t Pager::entry_count() const {
-    return std::filesystem::file_size(path_) / Entry::SIZE;
+std::size_t Pager::entry_count() {
+    file_.seekg(0, std::ios::end);
+    const std::size_t size = static_cast<std::size_t>(file_.tellg());
+    return size / Entry::SIZE;
 }
 
 } // namespace minidb

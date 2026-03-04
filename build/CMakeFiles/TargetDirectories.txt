@@ -1,0 +1,8 @@
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/minidb.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/test_entry.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/test_pager.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/test_buffer.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/test_database.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/test.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/edit_cache.dir
+C:/Users/aurel/Desktop/C++/proyecto/custom-minidb/build/CMakeFiles/rebuild_cache.dir

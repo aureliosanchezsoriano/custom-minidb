@@ -23,7 +23,7 @@ public:
   [[nodiscard]] std::vector<uint8_t> read_all() const;
 
   // Get the number of entries in the file
-  [[nodiscard]] size_t entry_count() const;
+  [[nodiscard]] size_t entry_count();
 
   Pager(const Pager &) = delete;
   Pager &operator=(const Pager &) = delete;

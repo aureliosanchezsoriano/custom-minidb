@@ -12,7 +12,7 @@ namespace minidb {
 class Database {
 public:
   explicit Database(const std::filesystem::path &path,
-                    std::size_t buffer_size = Buffer::DEFAULT_SIZE);
+                    std::size_t buffer_size = Buffer<>::DEFAULT_SIZE);
   ~Database();
 
   // Inserts a new entry
@@ -37,7 +37,7 @@ public:
 
 private:
   Pager pager_;
-  Buffer buffer_;
+  Buffer<> buffer_;
 
   [[nodiscard]] std::vector<Entry> read_all_entries() const;
 };
