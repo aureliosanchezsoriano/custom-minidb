@@ -2,7 +2,7 @@
 #include "include/minidb/record.hpp"
 
 int main() {
-    minidb::record r{1704067200, 1};
+    minidb::entry r{1704067200, 1};
     
     auto bytes = r.serialize();
     std::cout << "Serializado OK, bytes: ";
@@ -10,7 +10,7 @@ int main() {
         std::cout << (int)b << " ";
     std::cout << std::endl;
 
-    auto result = minidb::record::deserialize(bytes);
+    auto result = minidb::entry::deserialize(bytes);
     if (result)
         std::cout << "Deserializado OK, timestamp: " << result->timestamp << std::endl;
     else
