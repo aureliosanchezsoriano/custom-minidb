@@ -1,5 +1,0 @@
-test_entry 8 0.0542425
-test_pager 5 0.0907325
-test_buffer 1 2.55309
-test_database 5 0.101025
----
