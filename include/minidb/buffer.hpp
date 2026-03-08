@@ -9,6 +9,7 @@
 
 namespace minidb {
 
+// Buffer class that batches entries in memory before writing to disk.
 template<std::size_t TimeoutSeconds = 30>
 class Buffer {
 public:
@@ -28,15 +29,18 @@ public:
     [[nodiscard]] bool push(const Entry& e) {
         buffer_.push_back(e);
 
+        // If we've reached capacity, flush immediately. If we flushed too recently, grow the buffer to reduce flush frequency.
         if (buffer_.size() >= capacity_) {
+            // Check how long it's been since the last flush
             const auto now     = std::chrono::steady_clock::now();
             const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                                      now - last_flush_).count();
             const bool ok = flush();
+            // If we flushed too quickly, grow the buffer to reduce flush frequency
             if (elapsed < 2) grow();
             return ok;
         }
-
+        // Check if we should flush based on time since last flush
         const auto now     = std::chrono::steady_clock::now();
         const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                                  now - last_flush_).count();
@@ -52,16 +56,19 @@ public:
         std::vector<uint8_t> bytes;
         bytes.reserve(buffer_.size() * Entry::SIZE);
 
+        // Serialize all entries in the buffer
         for (const auto& e : buffer_) {
             const auto serialized = e.serialize();
             bytes.insert(bytes.end(), serialized.begin(), serialized.end());
         }
 
-        const bool ok = pager_.write(bytes);
+        const bool ok = pager_.write(bytes); // Write to disk
         if (ok) {
+            // Check if we should grow or shrink the buffer based on time since last flush
             const auto now     = std::chrono::steady_clock::now();
             const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                                      now - last_flush_).count();
+            // If we flushed too quickly, grow the buffer to reduce flush frequency
             if (elapsed > TimeoutSeconds) shrink();
             buffer_.clear();
             last_flush_ = std::chrono::steady_clock::now();
