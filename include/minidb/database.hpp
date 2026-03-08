@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <vector>
+#include <shared_mutex>
 
 namespace minidb {
 
@@ -36,8 +37,9 @@ public:
   Database &operator=(const Database &) = delete;
 
 private:
-  Pager pager_;
-  Buffer<> buffer_;
+  Pager pager_; // Manages file I/O
+  Buffer<> buffer_; // In-memory buffer for batching writes
+  mutable std::shared_mutex mutex_; // Protects concurrent access to the database
 
   [[nodiscard]] std::vector<Entry> read_all_entries() const;
 };

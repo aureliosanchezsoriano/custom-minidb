@@ -1,4 +1,6 @@
 #include "minidb/database.hpp"
+#include <shared_mutex>
+#include <mutex>
 
 namespace minidb {
 
@@ -12,10 +14,12 @@ Database::~Database() {
 }
 
 bool Database::insert(const Entry& e) {
+    std::unique_lock lock(mutex_);
     return buffer_.push(e);
 }
 
 bool Database::flush() {
+    std::unique_lock lock(mutex_);
     return buffer_.flush();
 }
 
@@ -36,10 +40,12 @@ std::vector<Entry> Database::read_all_entries() const {
 }
 
 std::vector<Entry> Database::query_all() const {
+    std::shared_lock lock(mutex_);
     return read_all_entries();
 }
 
 std::vector<Entry> Database::query_by_device(uint8_t device_id) const {
+    std::shared_lock lock(mutex_);
     auto all = read_all_entries();
     std::erase_if(all, [device_id](const Entry& e) {
         return e.device_id != device_id;
@@ -48,6 +54,7 @@ std::vector<Entry> Database::query_by_device(uint8_t device_id) const {
 }
 
 std::vector<Entry> Database::query_by_range(uint32_t from_ts, uint32_t to_ts) const {
+    std::shared_lock lock(mutex_);
     auto all = read_all_entries();
     std::erase_if(all, [from_ts, to_ts](const Entry& e) {
         return e.timestamp < from_ts || e.timestamp > to_ts;
