@@ -16,7 +16,7 @@ detection system running on Raspberry Pi.
 - **Little-endian serialization** — portable across ARM and x86 architectures
 - **Modern C++20** — `std::optional`, `std::span`, `std::chrono`, `constexpr` throughout
 - **Header-only buffer** — zero-overhead template-based timeout configuration
-
+- **Thread-safe** — readers-writer lock via `std::shared_mutex`
 ---
 
 ## Architecture
@@ -31,6 +31,12 @@ Pager             → binary file I/O, append and read operations
     │
 Entry             → data struct, serialization, CRC-8 integrity
 ```
+Thread safety is handled via `std::shared_mutex`:
+
+- **Writes** (`insert`, `flush`) acquire an exclusive `std::unique_lock` — no reads or writes can happen concurrently
+- **Reads** (`query_*`) acquire a shared `std::shared_lock` — multiple concurrent reads are allowed, but writes are blocked
+
+Write operations are queued and never dropped.
 
 ### Entry
 
