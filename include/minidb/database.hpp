@@ -1,8 +1,9 @@
 #pragma once
 
-#include "minidb/buffer.hpp"
-#include "minidb/entry.hpp"
-#include "minidb/pager.hpp"
+#include "buffer.hpp"
+#include "entry.hpp"
+#include "pager.hpp"
+
 #include <cstdint>
 #include <filesystem>
 #include <vector>
@@ -13,7 +14,7 @@ namespace minidb {
 class Database {
 public:
   explicit Database(const std::filesystem::path &path,
-                    std::size_t buffer_size = Buffer<>::DEFAULT_SIZE);
+                    std::size_t buffer_size = minidb::Buffer<>::DEFAULT_SIZE);
   ~Database();
 
   // Inserts a new entry

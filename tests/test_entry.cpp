@@ -1,4 +1,5 @@
 #include "../vendor/catch2/catch.hpp"
+
 #include "minidb/entry.hpp"
 
 using namespace minidb;

@@ -1,9 +1,9 @@
 #include "minidb/pager.hpp"
-#include <stdexcept>
+#include "minidb/entry.hpp"
 
 namespace minidb {
 
-Pager::Pager(const std::filesystem::path& path) : path_(path) {
+minidb::Pager::Pager(const std::filesystem::path& path) : path_(path) {
     // Open the file in binary mode for both reading and appending. Create it if it doesn't exist.
     file_.open(path_, std::ios::binary | std::ios::app | std::ios::in);
     if (!file_.is_open())
@@ -41,7 +41,7 @@ std::vector<uint8_t> Pager::read_all() const {
 std::size_t Pager::entry_count() {
     file_.seekg(0, std::ios::end);
     const std::size_t size = static_cast<std::size_t>(file_.tellg());
-    return size / Entry::SIZE;
+    return size / minidb::Entry::SIZE;
 }
 
 } // namespace minidb

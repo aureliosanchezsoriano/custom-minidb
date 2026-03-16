@@ -4,4 +4,5 @@ build/
 *.a
 *.dll
 *.bin
+.cache
 .vscode/

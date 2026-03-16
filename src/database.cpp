@@ -1,4 +1,7 @@
 #include "minidb/database.hpp"
+#include "minidb/entry.hpp"
+
+#include <vector>
 #include <shared_mutex>
 #include <mutex>
 
@@ -10,7 +13,7 @@ Database::Database(const std::filesystem::path& path, std::size_t buffer_size)
 {}
 // Destructor flushes any remaining entries in the buffer to disk.
 Database::~Database() {
-    flush();
+    (void)flush();
 }
 // Inserts a new entry into the database. Returns true on success, false on failure.
 bool Database::insert(const Entry& e) {
@@ -55,7 +58,7 @@ std::vector<Entry> Database::query_by_device(uint8_t device_id) const {
     return all;
 }
 
-std::vector<Entry> Database::query_by_range(uint32_t from_ts, uint32_t to_ts) const {
+std::vector<minidb::Entry> Database::query_by_range(uint32_t from_ts, uint32_t to_ts) const {
     std::shared_lock lock(mutex_);
     auto all = read_all_entries();
     std::erase_if(all, [from_ts, to_ts](const Entry& e) {

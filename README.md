@@ -15,22 +15,24 @@ detection system running on Raspberry Pi.
 - **Append-only writes** — O(1) insertions, safe against power loss
 - **Little-endian serialization** — portable across ARM and x86 architectures
 - **Modern C++20** — `std::optional`, `std::span`, `std::chrono`, `constexpr` throughout
-- **Header-only buffer** — zero-overhead template-based timeout configuration
+- **Clock-injectable buffer** — zero-overhead template-based clock for testing and production
 - **Thread-safe** — readers-writer lock via `std::shared_mutex`
+
 ---
 
 ## Architecture
 
-The library is built in three layers, each with a single responsibility:
+The library is built in four layers, each with a single responsibility:
 ```
 Database          → public API: insert(), query_all(), query_by_device(), query_by_range()
     │
-Buffer<T>         → dynamic write buffer, flush logic, timeout management
+Buffer<Clock>     → dynamic write buffer, flush logic, timeout management
     │
 Pager             → binary file I/O, append and read operations
     │
 Entry             → data struct, serialization, CRC-8 integrity
 ```
+
 Thread safety is handled via `std::shared_mutex`:
 
 - **Writes** (`insert`, `flush`) acquire an exclusive `std::unique_lock` — no reads or writes can happen concurrently
@@ -66,30 +68,35 @@ file. Reads load the entire file into memory.
 Accumulates entries in RAM and flushes them to the Pager in batches. This
 minimizes syscall overhead for high-frequency writes.
 
-The buffer is implemented as a C++20 template parameterized by timeout:
+The buffer is implemented as a C++20 template parameterized by a clock type:
 ```cpp
-template<std::size_t TimeoutSeconds = 30>
+template<typename Clock = std::chrono::steady_clock>
 class Buffer;
 ```
+
+The clock type must satisfy the `std::chrono` clock concept — it must expose a
+`now()` static method returning a `time_point`. In production the default
+`steady_clock` is used. In tests, a `TestClock` with manually controllable time
+is injected instead, avoiding any real-time delays.
 
 **Dynamic sizing** — the buffer adapts its capacity based on write frequency:
 
 - If the buffer fills up in less than 2 seconds, capacity doubles (up to 1024)
-- If the buffer has been idle for longer than the timeout, capacity halves (down to 16)
+- If the buffer has been idle for longer than `TIMEOUT` seconds, capacity halves (down to 16)
 
 **Two flush triggers:**
 
 | Trigger | Condition |
 |---|---|
 | Size-based | Buffer reaches capacity |
-| Time-based | No flush for `TimeoutSeconds` seconds |
+| Time-based | No flush for `TIMEOUT` seconds |
 
 The destructor of `Database` always flushes the buffer, so data is never lost
 on clean shutdown.
 
 ### Database
 
-The public API. Owns a `Pager` and a `Buffer`, exposes insert and query
+The public API. Owns a `Pager` and a `Buffer<>`, exposes insert and query
 operations. Queries load all entries from disk and filter in memory, which is
 efficient for the expected data volume (a few MB per year).
 
@@ -152,6 +159,9 @@ int main() {
     // Insert a detection event
     db.insert(minidb::Entry{ts, 1});  // device 1
 
+    // Flush before querying recently inserted data
+    db.flush();
+
     // Query all entries
     auto all = db.query_all();
 
@@ -162,7 +172,7 @@ int main() {
     auto in_range = db.query_by_range(1704067200, 1704067300);
 
     return 0;  // destructor flushes buffer automatically
-} 
+}
 ```
 
 ### Using as a git submodule
@@ -181,20 +191,36 @@ When cloning a project that uses custom-minidb as a submodule:
 git clone --recurse-submodules https://github.com/yourusername/your-project
 ```
 
-### Configuring the buffer timeout
+### Injecting a custom clock
 
-By default the buffer flushes after 30 seconds of inactivity. This is
-configured at compile time via the template parameter:
+By default `Buffer` uses `std::chrono::steady_clock`. You can inject any clock
+that satisfies the `std::chrono` clock concept:
 ```cpp
-// Production: flush after 30 seconds (default)
-minidb::Buffer<> buffer;
+// Production: uses steady_clock (default)
+minidb::Buffer<> buffer(pager);
 
-// Custom timeout: flush after 5 seconds
-minidb::Buffer<5> buffer;
+// Custom clock injection
+minidb::Buffer<MyClock> buffer(pager);
 ```
 
-The `Database` class uses `Buffer<>` by default. If you need a custom timeout,
-instantiate `Buffer` and `Pager` directly.
+In tests, a `TestClock` with manually controllable time is used to avoid
+real-time delays:
+```cpp
+struct TestClock {
+    using duration   = std::chrono::steady_clock::duration;
+    using time_point = std::chrono::time_point<TestClock>;
+
+    static time_point now()                    { return current_time; }
+    static void advance(std::chrono::seconds s) { current_time += s; }
+    static void reset()                         { current_time = time_point{}; }
+
+    static inline time_point current_time{};
+};
+
+// Advance time without sleeping
+TestClock::advance(std::chrono::seconds(31));
+minidb::Buffer<TestClock> buffer(pager);
+```
 
 ---
 

@@ -3,10 +3,9 @@
 #include <cstdint>
 #include <cstddef>
 #include <filesystem>
-#include <span>
 #include <vector>
 #include <fstream>
-#include "minidb/entry.hpp"
+#include <span>
 
 namespace minidb {
 
